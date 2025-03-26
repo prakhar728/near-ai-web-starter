@@ -1,0 +1,295 @@
+.main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  min-height: 100vh;
+  padding: 3rem 1rem;
+  max-width: var(--max-width);
+  margin: 0 auto;
+}
+
+.description {
+  width: 100%;
+  text-align: center;
+  margin-bottom: 2.5rem;
+}
+
+.description h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  color: var(--primary-color);
+}
+
+.description p {
+  font-size: 1.1rem;
+  color: var(--text-muted);
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* Container for the chat application */
+.container {
+  width: 100%;
+  max-width: 800px;
+  background-color: var(--card-background);
+  border-radius: 12px;
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+  margin: 0 auto;
+}
+
+/* Agent form styling */
+.agentForm {
+  padding: 1.5rem;
+}
+
+.formGroup {
+  margin-bottom: 1.5rem;
+}
+
+.label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: var(--text-color);
+}
+
+.input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  background-color: var(--background-color);
+  color: var(--text-color);
+  font-size: 1rem;
+  transition: all 0.2s ease;
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
+}
+
+.input::placeholder {
+  color: var(--text-muted);
+  opacity: 0.7;
+}
+
+.startButton {
+  width: 100%;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius);
+  padding: 0.75rem 1rem;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.startButton:hover:not(:disabled) {
+  background-color: var(--primary-hover);
+}
+
+.startButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Chat header styling */
+.chatHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.chatHeader h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.newChatButton {
+  background: none;
+  border: none;
+  color: var(--primary-color);
+  font-size: 0.875rem;
+  padding: 0.5rem;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.newChatButton:hover {
+  text-decoration: underline;
+  background: none;
+}
+
+/* Messages area styling */
+.messagesArea {
+  height: 384px; /* 24rem */
+  overflow-y: auto;
+  padding: 1.25rem;
+  background-color: var(--background-color);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.emptyMessages {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.message {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 1rem;
+  max-width: 85%;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.userMessage {
+  align-self: flex-end;
+  background-color: var(--message-user-bg);
+  color: var(--message-user-text);
+  border-radius: 12px 12px 0 12px;
+  padding: 0.75rem 1rem;
+}
+
+.assistantMessage {
+  align-self: flex-start;
+  background-color: var(--message-assistant-bg);
+  color: var(--message-assistant-text);
+  border-radius: 12px 12px 12px 0;
+  padding: 0.75rem 1rem;
+}
+
+.systemMessage {
+  align-self: center;
+  background-color: var(--message-system-bg);
+  color: var(--message-system-text);
+  border-radius: 12px;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  max-width: 75%;
+}
+
+.messageSender {
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+  font-size: 0.9rem;
+}
+
+.messageContent p {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.messageContent p + p {
+  margin-top: 0.5rem;
+}
+
+/* Message input form */
+.inputForm {
+  display: flex;
+  padding: 1rem 1.5rem;
+  gap: 0.75rem;
+}
+
+.textarea {
+  flex-grow: 1;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  padding: 0.75rem 1rem;
+  font-family: inherit;
+  font-size: 1rem;
+  resize: none;
+  min-height: 60px;
+  background-color: var(--background-color);
+  color: var(--text-color);
+}
+
+.textarea:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
+}
+
+.textarea::placeholder {
+  color: var(--text-muted);
+  opacity: 0.7;
+}
+
+.sendButton {
+  align-self: flex-end;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius);
+  padding: 0.75rem 1.25rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.sendButton:hover:not(:disabled) {
+  background-color: var(--primary-hover);
+}
+
+.sendButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Error message */
+.error {
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  background-color: var(--error-bg);
+  color: var(--error-text);
+  border-radius: var(--border-radius);
+  font-weight: 500;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .main {
+    padding: 1.5rem 0.75rem;
+  }
+
+  .description h1 {
+    font-size: 2rem;
+  }
+
+  .description p {
+    font-size: 1rem;
+  }
+
+  .messagesArea {
+    height: 350px;
+    padding: 1rem;
+  }
+
+  .message {
+    max-width: 90%;
+  }
+  
+  .inputForm {
+    padding: 0.75rem 1rem;
+    gap: 0.5rem;
+  }
+}
