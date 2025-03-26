@@ -202,7 +202,7 @@ export default function AgentChat() {
                   Send a message to start the conversation
                 </p>
               ) : (
-                messages.map((msg) => (
+                [...messages].reverse().map((msg) => (
                   <div
                     key={msg.id}
                     className={`${styles.message} ${
