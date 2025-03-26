@@ -52,7 +52,7 @@ export default function AgentChat() {
       // If no valid auth in storage, request a new one
       try {
         const auth = await nearAIlogin(
-          await (await wallet?.selector)?.wallet(),
+          wallet,
           "Login to NEAR AI"
         );
 
