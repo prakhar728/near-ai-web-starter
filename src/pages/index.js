@@ -2,7 +2,7 @@ import { useState, useEffect, useContext, useRef } from "react";
 import { NearContext } from "@/wallets/near";
 import styles from "@/styles/app.module.css";
 import { createThread, fetchThreadState, runAgent } from "@/lib/near-ai-api";
-import { nearAIlogin } from "@/lib/login";
+import { handleNearAILoginCallback, nearAIlogin } from "@/lib/login";
 
 export default function AgentChat() {
   const { signedAccountId, wallet } = useContext(NearContext);
@@ -18,6 +18,10 @@ export default function AgentChat() {
 
   // Ref for auto-scrolling chat
   const messagesEndRef = useRef(null);
+
+  useEffect(() => {
+    handleNearAILoginCallback()
+  }, [])
 
   // Auto-scroll to bottom of messages
   useEffect(() => {
