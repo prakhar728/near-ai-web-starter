@@ -1,78 +1,85 @@
-import { useState, useEffect, useContext, useRef } from "react";
-import { NearContext } from "@/wallets/near";
+import { useState, useEffect, useRef } from "react";
+import { useWalletSelector } from "@near-wallet-selector/react-hook";
+
 import styles from "@/styles/app.module.css";
 import { createThread, fetchThreadState, runAgent } from "@/lib/near-ai-api";
-import { handleNearAILoginCallback, nearAIlogin } from "@/lib/login";
 
 export default function AgentChat() {
-  const { signedAccountId, wallet } = useContext(NearContext);
+  const { signedAccountId, signMessage } = useWalletSelector();
 
-  // States for the application
   const [agentId, setAgentId] = useState("");
   const [threadId, setThreadId] = useState(null);
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [nearSignatureAuth, setnearSignatureAuth] = useState(null);
+  const [nearSignatureAuth, setNearSignatureAuth] = useState(null);
 
-  // Ref for auto-scrolling chat
   const messagesEndRef = useRef(null);
 
-  useEffect(() => {
-    handleNearAILoginCallback()
-  }, [])
-
-  // Auto-scroll to bottom of messages
+  // Scroll to bottom when messages update
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages]);
 
+  // Authenticate using signMessage
   useEffect(() => {
-    const signMessage = async () => {
-      // Check if auth already exists in localStorage and is valid
-      const storedAuth = localStorage.getItem("NearAIAuthObject");
+    const authenticate = async () => {
+      if (!signedAccountId || !signMessage) return;
 
-      if (storedAuth) {
+      // Check local storage first
+      const stored = localStorage.getItem("NearAIAuthObject");
+      if (stored) {
         try {
-          const parsedAuth = JSON.parse(storedAuth);
-
-          // Check if the stored auth is for the current signed account
-          if (parsedAuth.account_id === signedAccountId) {
-            // Check if the token is still valid (not expired)
-            // You might need to adjust this based on your token structure
-            setnearSignatureAuth(parsedAuth);
-            console.log("Using stored auth:", parsedAuth);
+          const parsed = JSON.parse(stored);
+          if (parsed.account_id === signedAccountId) {
+            setNearSignatureAuth(parsed);
             return;
           }
-        } catch (error) {
-          console.error("Error parsing stored auth:", error);
-          // Continue to get new auth if parsing fails
+        } catch (err) {
+          console.error("Stored auth parsing error:", err);
         }
       }
 
-      // If no valid auth in storage, request a new one
       try {
-        const auth = await nearAIlogin(
-          wallet,
-          "Login to NEAR AI"
+        const nonce = new String(Date.now());
+        const nonceBuffer = Buffer.from(
+          new TextEncoder().encode(nonce.padStart(32, "0")),
         );
 
-        setnearSignatureAuth(auth);
-        console.log("New auth created:", JSON.stringify(auth));
-      } catch (error) {
-        console.error("Error during authentication:", error);
+        const message = "Login to NEAR AI";
+        const recipient = "ai.near"; // use actual recipient used by your backend
+        const callbackUrl = location.href;
+
+        const result = await signMessage({
+          message,
+          recipient,
+          nonce: nonceBuffer
+        });
+
+        const auth = {
+          message,
+          nonce: nonce,
+          recipient: recipient,
+          callback_url: callbackUrl,
+          signature: result.signature,
+          account_id: result.accountId,
+          public_key: result.publicKey,
+        };
+
+        setNearSignatureAuth(auth);
+        localStorage.setItem("NearAIAuthObject", JSON.stringify(auth));
+      } catch (err) {
+        console.error("Error signing in:", err);
+        setError("Authentication failed.");
       }
     };
 
-    if (signedAccountId) {
-      signMessage();
-    }
-  }, [signedAccountId, wallet, setnearSignatureAuth]);
+    authenticate();
+  }, [signedAccountId, signMessage]);
 
-  // Initialize thread when agent ID is submitted
   const handleStartChat = async (e) => {
     e.preventDefault();
     if (!agentId.trim()) {
@@ -85,76 +92,71 @@ export default function AgentChat() {
       setError(null);
 
       const newThread = await createThread(nearSignatureAuth);
-      if (newThread && newThread.id) {
+      if (newThread?.id) {
         setThreadId(newThread.id);
         setMessages([]);
       } else {
-        setError("Failed to create a new thread");
+        setError("Failed to create thread");
       }
     } catch (err) {
-      setError(`Error: ${err.message || "Failed to start chat"}`);
       console.error(err);
+      setError("Error starting chat");
     } finally {
       setLoading(false);
     }
   };
 
-  // Send message to agent
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!message.trim() || !threadId || !agentId) return;
 
+    const userMsg = {
+      id: Date.now().toString(),
+      role: "user",
+      content: [{ type: "text", text: { value: message } }],
+      created_at: Date.now(),
+    };
+
     try {
       setLoading(true);
-
-      // Add user message to chat
-      const userMessage = {
-        id: Date.now().toString(),
-        role: "user",
-        content: [{ type: "text", text: { value: message } }],
-        created_at: Date.now(),
-      };
-
-      setMessages((prevMessages) => [...prevMessages, userMessage]);
+      setMessages((prev) => [...prev, userMsg]);
 
       await runAgent(nearSignatureAuth, agentId, threadId, message);
+      const updatedThread = await fetchThreadState(nearSignatureAuth, threadId);
 
-      // Fetch updated thread state
-      const threadState = await fetchThreadState(nearSignatureAuth, threadId);
+      if (updatedThread?.data) {
+        setMessages((prevMessages) => [
+          ...prevMessages,
+          ...updatedThread.data
+            .filter(
+              (msg) =>
+                (msg.role === "assistant" && msg.metadata === null) || msg.role === "user"
+            )
+            .map((msg) => ({
+              id: msg.id,
+              role: msg.role,
+              content: msg.content,
+              created_at: msg.created_at,
+            })),
+        ]);
 
-      if (threadState && threadState.data) {
-        // Update messages from thread state
-        setMessages(
-          threadState.data.map((msg) => ({
-            id: msg.id,
-            role: msg.role,
-            content: msg.content,
-            created_at: msg.created_at,
-          }))
-        );
       }
 
-      // Clear message input
       setMessage("");
     } catch (err) {
-      setError(`Error: ${err.message || "Failed to send message"}`);
       console.error(err);
+      setError("Failed to send message");
     } finally {
       setLoading(false);
     }
   };
 
-  // Format message content for display
-  const formatMessageContent = (content) => {
-    if (!content || !Array.isArray(content)) return "";
-
-    return content.map((item, index) => {
-      if (item.type === "text" && item.text) {
-        return <p key={index}>{item.text.value}</p>;
-      }
-      return null;
-    });
-  };
+  const formatMessageContent = (content) =>
+    Array.isArray(content)
+      ? content.map((item, index) =>
+        item.type === "text" ? <p key={index}>{item.text?.value}</p> : null
+      )
+      : "";
 
   return (
     <main className={styles.main}>
@@ -206,23 +208,22 @@ export default function AgentChat() {
                   Send a message to start the conversation
                 </p>
               ) : (
-                [...messages].reverse().map((msg) => (
+                [...messages].map((msg) => (
                   <div
                     key={msg.id}
-                    className={`${styles.message} ${
-                      msg.role === "user"
-                        ? styles.userMessage
-                        : msg.role === "assistant"
+                    className={`${styles.message} ${msg.role === "user"
+                      ? styles.userMessage
+                      : msg.role === "assistant"
                         ? styles.assistantMessage
                         : styles.systemMessage
-                    }`}
+                      }`}
                   >
                     <div className={styles.messageSender}>
                       {msg.role === "user"
                         ? "You"
                         : msg.role === "assistant"
-                        ? "Agent"
-                        : "System"}
+                          ? "Agent"
+                          : "System"}
                     </div>
                     <div className={styles.messageContent}>
                       {formatMessageContent(msg.content)}
@@ -252,7 +253,6 @@ export default function AgentChat() {
             </form>
           </>
         )}
-
         {error && <div className={styles.error}>{error}</div>}
       </div>
     </main>
